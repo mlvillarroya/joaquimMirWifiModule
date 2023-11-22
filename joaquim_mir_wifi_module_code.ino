@@ -27,8 +27,13 @@ const String GET = "GET";
 const String HELP = "HELP";
 const String ACK = "ACK";
 const String NOACK = "NOACK";
-const int MAX_INTENTS = 3;
+const String CONNECTED = "CONNECTED";
+const String DISCONNECTED = "DISCONNECTED";
 system_status generalStatus;
+
+bool hasParameter(String parameter) {
+  return !parameter.isEmpty();
+}
 
 bool canSerialReceive() {
   return (generalStatus == STATUS_READING_INSTRUCTIONS || generalStatus == STATUS_CONNECTED || generalStatus == STATUS_READY_TO_SEND_REQUEST);
@@ -42,22 +47,32 @@ void sendNOACK() {
   Serial.println(NOACK);
 }
 
+void sendDISCONNECTED() {
+  Serial.println(DISCONNECTED);
+}
+
+void sendCONNECTED() {
+  Serial.println(CONNECTED);
+}
+
 void WiFiEvent(WiFiEvent_t event) {
 
     switch(event) {
         case WIFI_EVENT_STAMODE_GOT_IP:
-            Serial.println("WiFi connected");
+            Serial.println(" ");
+            sendCONNECTED();
             Serial.println("IP address: ");
             Serial.println(WiFi.localIP());
             generalStatus = STATUS_CONNECTED;
             break;
         case WIFI_EVENT_STAMODE_DISCONNECTED:
-            Serial.println("WiFi disconnected, please try introducing SSID and password again");
-            ssid = "";
-            password = "";
-            url = "";
-            generalStatus = STATUS_READING_INSTRUCTIONS;
-            WiFi.disconnect();   
+            if (generalStatus != STATUS_READING_INSTRUCTIONS){ 
+              sendDISCONNECTED();
+              ssid = "";
+              password = "";
+              url = "";
+              generalStatus = STATUS_READING_INSTRUCTIONS;
+            } 
             break;
     }
 }
@@ -118,17 +133,37 @@ void sendRequest() {
 
 void executeInstruction(String command, String parameter) {
   if (command == SSID) {
-      ssid = parameter;
-      Serial.println("SSID set to " + ssid);
+      if (!hasParameter(parameter)) {
+        sendNOACK();
+        Serial.println("Parameter needed");
+      }
+      else {
+        ssid = parameter;
+        Serial.println("SSID set to " + ssid);
+        sendACK();
+      }
     }
   else if (command == PASSWORD) {
-      password = parameter;
-      Serial.println("Password set to " + password);
-
+      if (!hasParameter(parameter)) {
+        sendNOACK();
+        Serial.println("Parameter needed");
+      }
+      else {
+        password = parameter;
+        Serial.println("PASSWORD set to " + password);
+        sendACK();
+      }
     }
   else if (command == GET) {
-      url = parameter;
-      Serial.println("Sending GET request to " + url);
+      if (!hasParameter(parameter)) {
+        sendNOACK();
+        Serial.println("Parameter needed");
+      }
+      else {
+        url = parameter;
+        Serial.println("Sending GET request to " + url);
+        sendACK();
+      }
     }
   else if (command == RESET) {
       WiFi.disconnect();
@@ -191,6 +226,7 @@ void loop() {
       break;
     }
     case STATUS_READY_TO_SEND_REQUEST: {
+      Serial.println("Ready to send request");
       sendRequest();
       break;
     }
