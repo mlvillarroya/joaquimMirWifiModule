@@ -25,6 +25,7 @@ const String PASSWORD = "PASSWORD";
 const String RESET = "RESET";
 const String GET = "GET";
 const String HELP = "HELP";
+const String INFO = "INFO";
 const String ACK = "ACK";
 const String NOACK = "NOACK";
 const String CONNECTED = "CONNECTED";
@@ -33,6 +34,10 @@ system_status generalStatus;
 
 bool hasParameter(String parameter) {
   return !parameter.isEmpty();
+}
+
+bool systemConnected() {
+  return (generalStatus == STATUS_CONNECTED || generalStatus == STATUS_READY_TO_SEND_REQUEST);
 }
 
 bool canSerialReceive() {
@@ -121,7 +126,6 @@ void sendRequest() {
         Serial.printf("[HTTPS] GET... failed, error: %s\n", https.errorToString(httpCode).c_str());
         sendNOACK();
       }
-
       https.end();
     } else {
       Serial.printf("[HTTPS] Unable to connect\n");
@@ -134,8 +138,8 @@ void sendRequest() {
 void executeInstruction(String command, String parameter) {
   if (command == SSID) {
       if (!hasParameter(parameter)) {
-        sendNOACK();
         Serial.println("Parameter needed");
+        sendNOACK();
       }
       else {
         ssid = parameter;
@@ -145,8 +149,8 @@ void executeInstruction(String command, String parameter) {
     }
   else if (command == PASSWORD) {
       if (!hasParameter(parameter)) {
-        sendNOACK();
         Serial.println("Parameter needed");
+        sendNOACK();
       }
       else {
         password = parameter;
@@ -156,8 +160,8 @@ void executeInstruction(String command, String parameter) {
     }
   else if (command == GET) {
       if (!hasParameter(parameter)) {
-        sendNOACK();
         Serial.println("Parameter needed");
+        sendNOACK();
       }
       else {
         url = parameter;
@@ -178,11 +182,20 @@ void executeInstruction(String command, String parameter) {
       Serial.println("SSID --- to insert the WiFi network's SSID");
       Serial.println("PASSWORD --- to insert the WiFi network's password");
       Serial.println("GET --- send a GET request to the specified URL");
+      Serial.println("INFO --- returns the actual status of the connection");
       Serial.println("RESET --- to close connection and reset the WiFi information");
+      sendACK();
+  }
+  else if (command == INFO) {
+      Serial.println("Connection info");
+      if (systemConnected()) sendCONNECTED();
+      else sendDISCONNECTED();
+      sendACK();
   }
   else {
       Serial.println("COMMAND NOT ACCEPTED");
       Serial.println("Send HELP to know the accepted commands");
+      sendNOACK();
   }
 }
 
