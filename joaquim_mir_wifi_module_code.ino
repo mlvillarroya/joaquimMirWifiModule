@@ -20,6 +20,7 @@ typedef enum {
 String ssid = "";
 String password = "";
 String url = "";
+const int PIN_LED = 0;
 const String SSID = "SSID";
 const String PASSWORD = "PASSWORD";
 const String RESET = "RESET";
@@ -38,6 +39,14 @@ bool hasParameter(String parameter) {
 
 bool systemConnected() {
   return (generalStatus == STATUS_CONNECTED || generalStatus == STATUS_READY_TO_SEND_REQUEST);
+}
+
+void showConnected() {
+  digitalWrite(PIN_LED,HIGH);
+}
+
+void showDisconnected() {
+  digitalWrite(PIN_LED,LOW);
 }
 
 bool canSerialReceive() {
@@ -216,12 +225,17 @@ void checkSerialCreateInstruction() {
 
 void setup() {
   Serial.begin(9600);
+  pinMode(0, OUTPUT);
   //Serial.setDebugOutput(true);
   generalStatus = STATUS_READING_INSTRUCTIONS;
   WiFi.onEvent(WiFiEvent);
 }
 
 void loop() {
+
+  if (systemConnected()) showConnected();
+  else showDisconnected();
+
   if (canSerialReceive()) checkSerialCreateInstruction();
 
   switch (generalStatus) {
